@@ -1,0 +1,18 @@
+{
+  "name": "Rust & Typescript Workspace",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspaces/app",
+  "overrideCommand": false,
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/rust": {
+      "version": "latest",
+      "profile": "complete"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "runServices": ["mysql", "phpmyadmin", "grafana", "prometheus"],
+  "forwardPorts": [3000, 3306, 8080, 9091, 3001],
+  "postCreateCommand": "rustc --version && node -v && cargo --version"
+}
