@@ -8,6 +8,7 @@ services:
       - mysql
       - grafana
       - prometheus
+      - redis
     ports:
       - "3000:3000"
     
@@ -52,5 +53,16 @@ services:
     depends_on:
       - prometheus
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+
 volumes:
   mysql_data:
+  redis_data:
