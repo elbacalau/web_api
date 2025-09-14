@@ -9,12 +9,13 @@ use crate::middleware::auth::AuthUser;
 
 
 use crate::models::users::User;
+use crate::models::follows::Follow;
 use crate::db::DbPool;
 
 pub async fn get_user_by_id(
     Path(id): Path<u64>,
     State(pool): State<DbPool>,
-    AuthUser { user_id }: AuthUser,
+    AuthUser { user_id: _ }: AuthUser,
 ) -> Result<Json<ApiResponse<UserResponse>>, ApiError> {
     let user = User::get_by_id(id, &pool).await
         .map_err(|_| ApiError::NotFound("Usuario no encontrado".to_string()))?;
@@ -80,5 +81,75 @@ pub async fn get_my_profile(
     };
 
     let response = ApiResponse::success_with_message(user_response, "Perfil obtenido exitosamente");
+    Ok(Json(response))
+}
+
+
+pub async fn follow_user(
+    AuthUser { user_id }: AuthUser, 
+    Path(id): Path<u64>,
+    State(pool): State<DbPool>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    let follower_id = user_id.parse::<u64>()
+        .map_err(|_| ApiError::BadRequest("ID de usuario inválido".to_string()))?;
+
+    let followed_id = id;
+
+    if follower_id == followed_id {
+        return Err(ApiError::BadRequest("No puedes seguirte a ti mismo".to_string()));
+    }
+
+
+    let already_following = Follow::exists(follower_id, followed_id, &pool).await
+        .map_err(|_| ApiError::InternalError("Error al verificar seguimiento".to_string()))?;
+
+    if already_following {
+        return Err(ApiError::BadRequest("Ya sigues a este usuario".to_string()));
+    }
+
+    Follow::create(follower_id, followed_id, &pool).await
+        .map_err(|_| ApiError::InternalError("Error al seguir usuario".to_string()))?;
+
+    let response = ApiResponse::success_with_message((), "Usuario seguido exitosamente");
+    Ok(Json(response))
+}
+
+pub async fn unfollow_user(
+    AuthUser { user_id }: AuthUser, 
+    Path(id): Path<u64>,
+    State(pool): State<DbPool>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    let follower_id = user_id.parse::<u64>()
+        .map_err(|_| ApiError::BadRequest("ID de usuario inválido".to_string()))?;
+
+    let followed_id = id;
+
+    if follower_id == followed_id {
+        return Err(ApiError::BadRequest("No puedes dejar de seguirte a ti mismo".to_string()));
+    }
+
+    
+    let is_following = Follow::exists(follower_id, followed_id, &pool).await
+        .map_err(|_| ApiError::InternalError("Error al verificar seguimiento".to_string()))?;
+
+    if !is_following {
+        return Err(ApiError::BadRequest("No sigues a este usuario".to_string()));
+    }
+
+    Follow::delete(follower_id, followed_id, &pool).await
+        .map_err(|_| ApiError::InternalError("Error al dejar de seguir usuario".to_string()))?;
+
+    let response = ApiResponse::success_with_message((), "Usuario dejado de seguir exitosamente");
+    Ok(Json(response))
+}
+
+pub async fn get_followers_count(
+    Path(id): Path<u64>,
+    State(pool): State<DbPool>,
+) -> Result<Json<ApiResponse<u64>>, ApiError> {
+    let count = Follow::get_follower_count(id, &pool).await
+        .map_err(|_| ApiError::InternalError("Error al obtener el contador de seguidores".to_string()))?;
+
+    let response = ApiResponse::success_with_message(count, "Contador de seguidores obtenido exitosamente");
     Ok(Json(response))
 }
