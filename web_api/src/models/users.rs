@@ -36,4 +36,10 @@ impl User {
         
         Self::get_by_id(id, pool).await
     }
+
+    pub async fn get_by_email(email: &str, pool: &DbPool) -> Result<User, Error> {
+        let query = "SELECT * FROM users WHERE email = ?";
+        let user = sqlx::query_as(query).bind(email).fetch_one(pool).await?;
+        Ok(user)
+    }
 }

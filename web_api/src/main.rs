@@ -3,6 +3,7 @@ mod models;
 mod routes;
 mod handlers;
 mod entities;
+mod middleware;
 
 use axum::{
     routing::get,

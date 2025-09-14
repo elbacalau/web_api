@@ -9,4 +9,5 @@ pub fn user_routes() -> Router<DbPool> {
     Router::new()
         .route("/", post(user::create_user))
         .route("/:id", get(user::get_user_by_id))
+        .route("/me", get(user::get_my_profile))
 }
